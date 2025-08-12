@@ -1,10 +1,6 @@
 # ⚽ EPL Match Predictor - Advanced ML Premier League Predictions
 
-A comprehensive Premier League match prediction system combining machine learning models with real-time bookmaker odds and enhanced player statistics for maximum acc```
-prediction/
-├── epl_prediction.py              # Main application
-├── README.md                      # This file
-├── cache/                         # Cached data directory.
+A comprehensive Premier League match prediction system combining machine learning models with real-time bookmaker odds and enhanced player statistics for maximum accuracy.
 
 ## 🌟 Features
 
@@ -235,17 +231,17 @@ export BOOKMAKER_API_KEY="e66a648eb21c685297c1df4c8e0304cc"  # Odds data
 
 ```
 prediction/
-├── epl_fpl_prediction.py      # Main application
-├── README.md                  # This file
-├── cache/                     # Cached data directory
-│   ├── matches/              # Match results by season
-│   ├── player_stats/         # Player statistics
-│   ├── team_stats/           # Team performance data
-│   ├── team_schedules/       # Team fixture lists
-│   ├── squads/               # Current squad data (24h cache)
-│   ├── injuries/             # Injury reports (12h cache)
-│   └── odds/                 # Bookmaker odds (30min cache)
-└── models/                    # Trained ML models
+├── epl_prediction.py              # Main application
+├── README.md                      # This file
+├── cache/                         # Cached data directory
+│   ├── matches/                   # Match results by season
+│   ├── player_stats/              # Player statistics
+│   ├── team_stats/                # Team performance data
+│   ├── team_schedules/            # Team fixture lists
+│   ├── squads/                    # Current squad data (24h cache)
+│   ├── injuries/                  # Injury reports (12h cache)
+│   └── odds/                      # Bookmaker odds (30min cache)
+└── models/                        # Trained ML models
     └── epl_result_model.joblib
 ```
 
