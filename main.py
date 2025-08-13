@@ -65,6 +65,7 @@ Examples:
     except ImportError as e:
         print(f"❌ Error importing modules: {e}")
         print("Please ensure all dependencies are installed: pip install -r requirements.txt")
+        import sys
         sys.exit(1)
     
     try:

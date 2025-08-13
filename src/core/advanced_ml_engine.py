@@ -36,7 +36,7 @@ class AdvancedMLPredictionEngine:
         
         # Initialize transfer validator for accurate squad data
         try:
-            from real_time_transfer_validator import RealTimeTransferValidator
+            from ..utils.real_time_transfer_validator import RealTimeTransferValidator
             self.transfer_validator = RealTimeTransferValidator(api_keys)
         except ImportError:
             self.transfer_validator = None

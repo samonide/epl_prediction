@@ -36,22 +36,184 @@ Predict English Premier League match outcomes using cutting-edge AI, xG/xGA anal
 
 ## 🚀 Quick Start
 
-### One-Line Setup & Run
+### 🎯 Simple Startup (Recommended)
+
+**For most users - Zero configuration required:**
+
+**Linux/macOS:**
 ```bash
-git clone https://github.com/samonide/epl_prediction.git && cd epl_prediction && python main.py
+./run.sh
 ```
 
-### Alternative Setup
+**Windows:**
+```batch
+run.bat
+```
+
+**What this does:**
+- ✅ Automatically creates virtual environment (`.venv`)
+- ✅ Installs all required dependencies
+- ✅ Activates environment and launches system
+- ✅ Handles all setup for you
+
+**Manual Clone + Run:**
 ```bash
-# Clone the repository
 git clone https://github.com/samonide/epl_prediction.git
 cd epl_prediction
+./run.sh  # Linux/macOS
+# OR
+run.bat   # Windows
+```
 
-# Run the system (auto-installs dependencies)
+### ⚙️ Advanced Manual Setup
+
+If you prefer manual control or need custom configuration:
+
+**1. Create Virtual Environment:**
+```bash
+# Create virtual environment
+python -m venv .venv
+
+# Activate it
+source .venv/bin/activate    # Linux/macOS
+# OR
+.venv\Scripts\activate       # Windows
+```
+
+**2. Install Dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+**3. Run System:**
+```bash
 python main.py
 ```
 
-That's it! The system will automatically handle dependencies and launch the interactive interface.
+**Required Dependencies:**
+- pandas>=1.5.0
+- scikit-learn>=1.2.0
+- numpy>=1.24.0
+- requests>=2.28.0
+- matplotlib>=3.6.0
+- seaborn>=0.12.0
+- psutil>=5.9.0
+
+### 🔧 Development Setup
+
+For contributors and developers:
+
+```bash
+# Clone repository
+git clone https://github.com/samonide/epl_prediction.git
+cd epl_prediction
+
+# Create development environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+
+# Install all dependencies including dev tools
+pip install -r requirements.txt
+
+# Run tests
+python main.py --test
+
+# Run with development flags
+python main.py --debug
+```
+
+### ✅ Verify Installation
+
+**Quick Test:**
+```bash
+# Using simple startup
+./run.sh --version    # Linux/macOS
+run.bat --version     # Windows
+
+# Expected output: EPL Prediction System v2.0.0
+```
+
+**Full System Test:**
+```bash
+# Using simple startup
+./run.sh --test       # Linux/macOS
+run.bat --test        # Windows
+
+# Expected: 7/7 tests passed (100.0%)
+```
+
+**Manual Environment Test:**
+```bash
+# Activate environment first
+source .venv/bin/activate    # Linux/macOS
+.venv\Scripts\activate       # Windows
+
+# Run tests
+python main.py --test
+python main.py --version
+```
+
+### 🆘 Troubleshooting
+
+**Problem: `./run.sh: Permission denied`**
+```bash
+chmod +x run.sh
+./run.sh
+```
+
+**Problem: `python: command not found`**
+- Install Python 3.8+ from [python.org](https://python.org)
+- Or use `python3` instead of `python`
+
+**Problem: Virtual environment issues**
+```bash
+# Delete and recreate
+rm -rf .venv
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Problem: Import errors**
+```bash
+# Ensure you're in virtual environment
+source .venv/bin/activate  # Linux/macOS
+# OR
+.venv\Scripts\activate     # Windows
+
+# Reinstall dependencies
+pip install -r requirements.txt
+```
+
+**Problem: `./run.sh: Permission denied`**
+```bash
+chmod +x run.sh
+./run.sh
+```
+
+**Problem: `python: command not found`**
+- Install Python 3.8+ from [python.org](https://python.org)
+- Or use `python3` instead of `python`
+
+**Problem: Virtual environment issues**
+```bash
+# Delete and recreate
+rm -rf .venv
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Problem: Import errors**
+```bash
+# Ensure you're in virtual environment
+source .venv/bin/activate  # Linux/macOS
+# OR
+.venv\Scripts\activate     # Windows
+
+# Reinstall dependencies
+pip install -r requirements.txt
+```
 
 ## 🆕 What's New in v2.0
 
