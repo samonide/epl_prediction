@@ -315,6 +315,7 @@ prediction/
 ├── run_epl_prediction.sh          # Cross-platform launcher (Linux/Mac)
 ├── run_epl_prediction.bat         # Windows launcher
 ├── requirements.txt               # Python dependencies
+├── .gitignore                     # Git ignore rules
 ├── README.md                      # This file
 ├── cache/                         # Cached data directory
 │   ├── matches/                   # Match results by season
@@ -327,6 +328,8 @@ prediction/
 └── models/                        # Trained ML models
     └── epl_result_model.joblib
 ```
+
+> **Note**: The `.venv/` virtual environment folder is automatically excluded from git via `.gitignore` - this is intentional as virtual environments should not be version controlled.
 
 ## 🎯 Key Features Explained
 
@@ -433,6 +436,19 @@ prediction/
 **Mac/Linux:**
 - Use `./run_epl_prediction.sh` for the launcher
 - Standard bash shell commands work out of the box
+
+### **Git and Version Control**
+
+**Why isn't `.venv` in the repository?**
+- ✅ **This is correct behavior** - virtual environments should never be in git
+- 🔄 **Regenerable** - Use `python -m venv .venv` to recreate
+- 🚀 **Automatic** - The launcher scripts handle this for you
+- 📁 **Excluded** - The `.gitignore` file properly excludes virtual environments
+
+**Cache directory structure:**
+- 📂 **Directories tracked** - Empty cache folders are kept with `.gitkeep` files  
+- 🚫 **Contents ignored** - Actual cache files are excluded (they're temporary)
+- 🔄 **Regenerable** - All cache data can be re-downloaded using sync commands
 
 ### **Rate Limit Management**
 - **Daily Limits**: 100 requests/day for API-Football
