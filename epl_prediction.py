@@ -1558,7 +1558,8 @@ def build_feature_matrix(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
 
 
 def get_enhanced_top_scorers(client: FBRClient, home_team_id: str, away_team_id: str, season_id: str, 
-                           h2h_data: Dict = None, home_form: Dict = None, away_form: Dict = None) -> Dict[str, List[Dict]]:
+                           h2h_data: Dict = None, home_form: Dict = None, away_form: Dict = None,
+                           home_team_name: str = None, away_team_name: str = None) -> Dict[str, List[Dict]]:
     """Get top scorers for both teams with enhanced analysis including current squad, transfers, and form."""
     result = {"home": [], "away": []}
     
@@ -1567,6 +1568,12 @@ def get_enhanced_top_scorers(client: FBRClient, home_team_id: str, away_team_id:
     
     for team_key, team_id in [("home", home_team_id), ("away", away_team_id)]:
         try:
+            # Get team name from the context
+            if team_key == "home":
+                team_context_name = home_team_name or "Unknown Team"
+            else:
+                team_context_name = away_team_name or "Unknown Team"
+                
             # Get current squad from API-Football if team mapping exists
             current_squad = []
             api_team_id = TEAM_MAPPING.get(team_id)
@@ -1614,16 +1621,71 @@ def get_enhanced_top_scorers(client: FBRClient, home_team_id: str, away_team_id:
                 player_name = meta.get("player_name", "Unknown")
                 player_name_lower = player_name.lower()
                 
-                # If we have current squad data, check if player is still in squad
+                # Enhanced transfer validation (check first, before any other processing)
+                try:
+                    from transfer_validation import check_player_transfer_status, normalize_team_name
+                    
+                    # Get team name - use meta data first, fallback to context
+                    team_name = meta.get("team_name", "") or team_context_name
+                    
+                    # Convert season format if needed (2024-2025 -> 2024-25)
+                    season_normalized = season_id
+                    if len(season_id.split('-')[1]) == 4:  # 2024-2025 format
+                        parts = season_id.split('-')
+                        season_normalized = f"{parts[0]}-{parts[1][-2:]}"  # 2024-25
+                    
+                    # Debug print for João Pedro case (remove in production)
+                    if "joão" in player_name_lower or "joao" in player_name_lower:
+                        print(f"🔍 Checking transfer for {player_name} at team '{team_name}' (season: {season_normalized})")
+                    
+                    # Check transfer status
+                    transfer_status = check_player_transfer_status(player_name, team_name, season_normalized)
+                    
+                    if transfer_status['should_exclude']:
+                        if transfer_status['warning_message']:
+                            print(transfer_status['warning_message'])
+                        continue
+                    elif transfer_status['warning_message']:
+                        # Player transferred TO this team - show positive message
+                        print(transfer_status['warning_message'])
+                
+                except ImportError as e:
+                    # Fallback to basic checking if transfer_validation not available
+                    print(f"Transfer validation failed to import: {e}")
+                except Exception as e:
+                    print(f"Transfer validation error: {e}")
+                    pass
+                
+                # Squad validation (if current squad data is available)
                 if current_squad:
-                    # Try exact match first, then fuzzy match
-                    is_in_squad = (
-                        player_name_lower in current_players or 
-                        any(player_name_lower in cp_name or cp_name in player_name_lower 
-                            for cp_name in current_players.keys())
-                    )
+                    # Basic squad validation (as backup)
+                    is_in_squad = False
+                    
+                    # 1. Exact name match
+                    if player_name_lower in current_players:
+                        is_in_squad = True
+                    
+                    # 2. Fuzzy matching with common name variations
                     if not is_in_squad:
-                        continue  # Player transferred out
+                        for cp_name in current_players.keys():
+                            # Contains match
+                            if player_name_lower in cp_name or cp_name in player_name_lower:
+                                is_in_squad = True
+                                break
+                            
+                            # Last name + first initial match
+                            player_parts = player_name_lower.split()
+                            cp_parts = cp_name.split()
+                            if (len(player_parts) >= 2 and len(cp_parts) >= 2 and 
+                                player_parts[-1] == cp_parts[-1] and 
+                                player_parts[0][0] == cp_parts[0][0]):
+                                is_in_squad = True
+                                break
+                    
+                    # If we have squad data but player not found, likely transferred
+                    if not is_in_squad:
+                        print(f"⚠️  Skipping {player_name} - not in current squad (likely transferred)")
+                        continue
                 
                 position = stats.get("positions", "")
                 goals = stats.get("gls", 0) or 0
@@ -2098,49 +2160,114 @@ def predict_for_rows(df_rows: pd.DataFrame, model_bundle_path: Path) -> pd.DataF
     return out.reset_index(drop=True)
 
 
-def predict_exact_score_enhanced(home_prob: float, draw_prob: float, away_prob: float) -> Tuple[int, int]:
-    """Predict exact scoreline that aligns with win probabilities using enhanced Poisson logic."""
-    # Estimate goals based on probabilities
-    # Higher home prob = higher home goals, higher away prob = higher away goals
+def predict_exact_score_enhanced(home_prob: float, draw_prob: float, away_prob: float, 
+                               match_context: Dict = None) -> Tuple[int, int]:
+    """
+    Predict exact scoreline that aligns with win probabilities using enhanced multi-factor analysis.
+    
+    Considers:
+    - Win probabilities alignment
+    - Team form and goal-scoring patterns  
+    - Historical head-to-head trends
+    - Injury impact
+    - Home advantage factors
+    """
     
     # Base goals estimate (typical EPL average is ~2.7 goals per game)
     base_total_goals = 2.7
     
-    # Adjust based on probabilities
-    # If home advantage is strong, home team scores more
+    # Extract context if available
+    if match_context:
+        home_goals_avg = match_context.get('home_goals_avg', 1.5)
+        away_goals_avg = match_context.get('away_goals_avg', 1.2)
+        home_conceded_avg = match_context.get('home_conceded_avg', 1.2)
+        away_conceded_avg = match_context.get('away_conceded_avg', 1.3)
+        h2h_total_avg = match_context.get('h2h_goals_avg', 2.5)
+        injury_impact_home = match_context.get('injury_impact_home', 0.0)
+        injury_impact_away = match_context.get('injury_impact_away', 0.0)
+    else:
+        # Default values if no context
+        home_goals_avg = away_goals_avg = 1.5
+        home_conceded_avg = away_conceded_avg = 1.2
+        h2h_total_avg = 2.5
+        injury_impact_home = injury_impact_away = 0.0
+    
+    # Enhanced lambda calculation with multiple factors
+    
+    # 1. Team attacking strength vs opponent defense
+    home_attack_vs_away_defense = (home_goals_avg + away_conceded_avg) / 2
+    away_attack_vs_home_defense = (away_goals_avg + home_conceded_avg) / 2
+    
+    # 2. Probability-based adjustment
     home_advantage = home_prob - 0.33  # 0.33 is neutral probability
     away_advantage = away_prob - 0.33
     
-    # Estimate lambda values for Poisson distribution
-    home_lambda = max(0.3, base_total_goals * 0.55 + home_advantage * 2.0)
-    away_lambda = max(0.3, base_total_goals * 0.45 + away_advantage * 2.0)
+    # 3. H2H goals tendency adjustment
+    h2h_factor = h2h_total_avg / base_total_goals  # Adjustment based on historical goals in this fixture
     
-    # Sample from Poisson distributions (rounded to most likely values)
+    # 4. Calculate base lambdas
+    home_lambda = home_attack_vs_away_defense * h2h_factor * 1.1  # Home advantage boost
+    away_lambda = away_attack_vs_home_defense * h2h_factor
+    
+    # 5. Apply probability adjustments
+    home_lambda += home_advantage * 1.5
+    away_lambda += away_advantage * 1.5
+    
+    # 6. Apply injury impact (reduce goals if key players injured)
+    home_lambda *= (1 - injury_impact_home * 0.3)  # Max 30% reduction
+    away_lambda *= (1 - injury_impact_away * 0.3)
+    
+    # 7. Ensure reasonable bounds
+    home_lambda = max(0.3, min(home_lambda, 4.0))
+    away_lambda = max(0.3, min(away_lambda, 4.0))
+    
+    # 8. Generate score using enhanced Poisson with rounding logic
     home_goals = round(home_lambda)
     away_goals = round(away_lambda)
     
-    # Ensure the result matches the most likely outcome
+    # 9. Result alignment - ensure score matches predicted outcome
     if home_prob > max(draw_prob, away_prob):
         # Home win expected
         if home_goals <= away_goals:
             home_goals = away_goals + 1
+            # But don't make it unrealistic
+            if home_goals > 4:
+                home_goals = 2
+                away_goals = 1
     elif away_prob > max(home_prob, draw_prob):
         # Away win expected  
         if away_goals <= home_goals:
             away_goals = home_goals + 1
+            # But don't make it unrealistic
+            if away_goals > 4:
+                away_goals = 2
+                home_goals = 1
     else:
-        # Draw expected
+        # Draw expected - adjust to most realistic draw
         if home_goals != away_goals:
-            # Adjust to a draw - prefer the closer adjustment
-            if abs(home_goals - away_goals) == 1:
-                if home_goals > away_goals:
-                    away_goals = home_goals
-                else:
-                    home_goals = away_goals
+            # Choose the more realistic draw score
+            avg_expected = (home_lambda + away_lambda) / 2
+            if avg_expected < 1.5:
+                home_goals = away_goals = 1  # 1-1
+            elif avg_expected < 2.5:
+                home_goals = away_goals = max(1, round(avg_expected))  # 1-1 or 2-2
             else:
-                # Default to 1-1 or 2-2 based on goal expectation
-                avg_goals = round((home_goals + away_goals) / 2)
-                home_goals = away_goals = max(1, avg_goals)
+                home_goals = away_goals = 2  # 2-2 for high-scoring draws
+    
+    # 10. Final realism check - avoid extreme scores unless justified
+    if home_goals + away_goals > 6:
+        # Scale down while maintaining ratio
+        total = home_goals + away_goals
+        home_goals = max(1, round(home_goals * 5 / total))
+        away_goals = max(1, round(away_goals * 5 / total))
+        
+        # Re-apply outcome constraint
+        if home_prob > max(draw_prob, away_prob) and home_goals <= away_goals:
+            home_goals = away_goals + 1
+        elif away_prob > max(home_prob, draw_prob) and away_goals <= home_goals:
+            away_goals = home_goals + 1
+        elif draw_prob > max(home_prob, away_prob):
+            home_goals = away_goals = max(home_goals, away_goals)
     
     return home_goals, away_goals
 
@@ -2760,7 +2887,8 @@ def cmd_predict_match(args):
                     try:
                         # Pass H2H and form data for enhanced scoring prediction
                         top_scorers = get_enhanced_top_scorers(client, home_team_id, away_team_id, try_season, 
-                                                             h2h, home_form, away_form)
+                                                             h2h, home_form, away_form,
+                                                             home_team_name=home, away_team_name=away)
                         if top_scorers and (top_scorers.get('home') or top_scorers.get('away')):
                             break
                     except:
@@ -2802,7 +2930,8 @@ def cmd_predict_match(args):
                     print("📊 Fetching current squad and player statistics...")
                     # Try to get basic stats even without cached data
                     try:
-                        basic_scorers = get_enhanced_top_scorers(client, home_team_id, away_team_id, player_season)
+                        basic_scorers = get_enhanced_top_scorers(client, home_team_id, away_team_id, player_season,
+                                                               home_team_name=home, away_team_name=away)
                         if basic_scorers and (basic_scorers.get('home') or basic_scorers.get('away')):
                             for team_key, team_name in [('home', home), ('away', away)]:
                                 if basic_scorers.get(team_key):
@@ -3448,18 +3577,63 @@ def main(argv: Optional[List[str]] = None):
         ha_form = summarize_home_away(df_all, h_id, a_id)
         venue = summarize_venue_specific(df_all, h_id, a_id)
         
-        # Enhanced score prediction using team averages
+        # Enhanced score prediction using comprehensive context
         home_goals_avg = (home_form['gf_avg'] + away_form['ga_avg']) / 2 if home_form['gf_avg'] and away_form['ga_avg'] else 1.5
         away_goals_avg = (away_form['gf_avg'] + home_form['ga_avg']) / 2 if away_form['gf_avg'] and home_form['ga_avg'] else 1.2
         
-        # Get exact score prediction
-        exact_home, exact_away = predict_exact_score_poisson(home_goals_avg, away_goals_avg)
+        # Build comprehensive match context for enhanced prediction
+        match_context = {
+            'home_goals_avg': home_goals_avg,
+            'away_goals_avg': away_goals_avg,
+            'home_conceded_avg': home_form.get('ga_avg', 1.2),
+            'away_conceded_avg': away_form.get('ga_avg', 1.3),
+            'h2h_goals_avg': (h2h.get('gf', 0) + h2h.get('ga', 0)) / max(h2h.get('meetings', 1), 1),
+            'injury_impact_home': 0.0,  # Would be calculated from injury data if available
+            'injury_impact_away': 0.0,  # Would be calculated from injury data if available
+            'home_form_momentum': 1.0 if home_form.get('ppg', 1.0) > 1.5 else 0.5,
+            'away_form_momentum': 1.0 if away_form.get('ppg', 1.0) > 1.5 else 0.5
+        }
         
-        # Scoreline Prediction
+        # Get enhanced exact score prediction
+        exact_home, exact_away = predict_exact_score_enhanced(ph, pd_, pa, match_context)
+        
+        # Also get alternative predictions for comparison
+        poisson_home, poisson_away = predict_exact_score_poisson(home_goals_avg, away_goals_avg)
+        
+        # Scoreline Prediction with confidence analysis
         print("\n" + "─"*80)
         print("⚽ PREDICTED SCORELINE")
         print("─"*40)
         print(f"🥅 Final Score: {r['home']} {exact_home} - {exact_away} {r['away']}")
+        
+        # Show prediction reasoning
+        confidence_factors = []
+        if abs(exact_home - poisson_home) <= 1 and abs(exact_away - poisson_away) <= 1:
+            confidence_factors.append("Statistical model alignment")
+        
+        if match_context['h2h_goals_avg'] > 2.5:
+            confidence_factors.append("High-scoring fixture history")
+        elif match_context['h2h_goals_avg'] < 2.0:
+            confidence_factors.append("Low-scoring fixture tendency")
+            
+        if home_form.get('ppg', 1.0) > 2.0:
+            confidence_factors.append("Strong home form")
+        if away_form.get('ppg', 1.0) > 1.5:
+            confidence_factors.append("Good away form")
+            
+        if confidence_factors:
+            print(f"📈 Confidence Factors: {', '.join(confidence_factors[:3])}")
+        
+        # Alternative scorelines
+        alternatives = []
+        if exact_home > exact_away:  # Home win predicted
+            alternatives = [f"{exact_home-1}-{exact_away}", f"{exact_home+1}-{exact_away}", f"{exact_home}-{exact_away+1}"]
+        elif exact_away > exact_home:  # Away win predicted
+            alternatives = [f"{exact_home}-{exact_away-1}", f"{exact_home}-{exact_away+1}", f"{exact_home+1}-{exact_away}"]
+        else:  # Draw predicted
+            alternatives = [f"{exact_home+1}-{exact_away+1}", f"{max(0,exact_home-1)}-{max(0,exact_away-1)}", f"{exact_home+1}-{exact_away}"]
+        
+        print(f"🎲 Alternative Scores: {' | '.join(alternatives[:3])}")
         
         # Get top scorers prediction
         try:
@@ -3473,7 +3647,10 @@ def main(argv: Optional[List[str]] = None):
             
             for try_season in seasons_to_try:
                 try:
-                    top_scorers = get_enhanced_top_scorers(client, h_id, a_id, try_season)
+                    # Pass team names for better transfer validation
+                    top_scorers = get_enhanced_top_scorers(client, h_id, a_id, try_season, 
+                                                         h2h_data=h2h, home_form=home_form, away_form=away_form,
+                                                         home_team_name=r['home'], away_team_name=r['away'])
                     if top_scorers and (top_scorers.get('home') or top_scorers.get('away')):
                         break
                 except:
@@ -3487,6 +3664,26 @@ def main(argv: Optional[List[str]] = None):
         print("\n" + "─"*80)
         print("📈 MATCH ANALYSIS")
         print("─"*40)
+        
+        # Enhanced analysis with transfer impact
+        try:
+            from transfer_validation import get_transfer_impact_summary
+            
+            # Get transfer impact for both teams
+            home_transfers = get_transfer_impact_summary(r['home'], season)
+            away_transfers = get_transfer_impact_summary(r['away'], season)
+            
+            # Show transfer impact if significant
+            if home_transfers['key_changes'] or away_transfers['key_changes']:
+                print("🔄 Transfer Impact:")
+                if home_transfers['key_changes']:
+                    print(f"   🏠 {r['home']}: {', '.join(home_transfers['key_changes'][:2])}")
+                if away_transfers['key_changes']:
+                    print(f"   ✈️  {r['away']}: {', '.join(away_transfers['key_changes'][:2])}")
+                print()
+        except ImportError:
+            pass
+        
         print(f"📊 H2H Record: {h2h['record']} (Goals: {h2h['gf']}-{h2h['ga']}) in {h2h['meetings']} games")
         print(f"🔥 Recent Form: {r['home']} {home_form['ppg']:.1f}PPG ({home_form['gf_avg']:.1f}GF {home_form['ga_avg']:.1f}GA) | {r['away']} {away_form['ppg']:.1f}PPG ({away_form['gf_avg']:.1f}GF {away_form['ga_avg']:.1f}GA)")
         print(f"🏠 Home/Away: {r['home']} {ha_form['home_ppg_last5_home']:.1f}PPG at home | {r['away']} {ha_form['away_ppg_last5_away']:.1f}PPG away")
