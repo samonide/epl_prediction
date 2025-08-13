@@ -2,6 +2,26 @@
 
 A comprehensive Premier League match prediction system combining machine learning models with real-time bookmaker odds and enhanced player statistics for maximum accuracy.
 
+## ⚡ Quick Start (30 seconds!)
+
+**Just run one command and you're ready:**
+
+```bash
+# Linux/Mac
+git clone <repository-url> && cd prediction && ./run_epl_prediction.sh
+
+# Windows
+git clone <repository-url> && cd prediction && run_epl_prediction.bat
+```
+
+The launcher handles everything automatically:
+- ✅ Python environment setup
+- ✅ Dependency installation  
+- ✅ API key generation
+- ✅ Data synchronization
+- ✅ Model training
+- ✅ Ready to predict!
+
 ## 🌟 Features
 
 ### 🧠 **Advanced ML Predictions**
@@ -34,7 +54,37 @@ A comprehensive Premier League match prediction system combining machine learnin
 
 ## 🚀 Quick Start
 
-### Installation
+### 🎬 **One-Click Launch (Recommended)**
+
+**Linux/Mac:**
+```bash
+# Clone repository
+git clone <repository-url>
+cd prediction
+
+# Run the cross-platform launcher
+./run_epl_prediction.sh
+```
+
+**Windows:**
+```cmd
+# Clone repository
+git clone <repository-url>
+cd prediction
+
+# Run the Windows launcher
+run_epl_prediction.bat
+```
+
+The launcher automatically:
+- ✅ Detects your OS and Python version
+- ✅ Creates and activates virtual environment
+- ✅ Installs all dependencies
+- ✅ Guides you through API key setup
+- ✅ Performs first-time data sync and model training
+- ✅ Provides an easy-to-use menu interface
+
+### 🛠️ **Manual Installation (Advanced)**
 
 ```bash
 # Clone repository
@@ -48,7 +98,7 @@ source .venv/bin/activate  # Linux/Mac
 .venv\Scripts\activate     # Windows
 
 # Install dependencies
-pip install numpy pandas scikit-learn requests joblib
+pip install -r requirements.txt
 ```
 
 ### API Keys Setup
@@ -80,6 +130,36 @@ python epl_prediction.py predict-match --home "Liverpool" --away "Chelsea"
 ```
 
 ## 📖 Usage Guide
+
+### 🎬 **Easy Launch (Recommended)**
+
+**Quick Start with Launcher:**
+```bash
+# Linux/Mac
+./run_epl_prediction.sh
+
+# Windows  
+run_epl_prediction.bat
+```
+
+The launcher provides a user-friendly menu:
+```
+⚽ EPL PREDICTION QUICK LAUNCHER
+================================================================
+
+Choose an action:
+
+1️⃣  🎯 Predict next EPL match
+2️⃣  📅 Show upcoming fixtures predictions
+3️⃣  ⚔️  Predict specific match
+4️⃣  🔄 Update all data
+5️⃣  🖥️  Interactive mode (full menu)
+6️⃣  🛠️  Setup/Maintenance
+7️⃣  ❓ Help
+8️⃣  🚪 Exit
+
+Enter your choice (1-8):
+```
 
 ### 🖥️ **Interactive Mode**
 ```bash
@@ -232,6 +312,9 @@ export BOOKMAKER_API_KEY="e66a648eb21c685297c1df4c8e0304cc"  # Odds data
 ```
 prediction/
 ├── epl_prediction.py              # Main application
+├── run_epl_prediction.sh          # Cross-platform launcher (Linux/Mac)
+├── run_epl_prediction.bat         # Windows launcher
+├── requirements.txt               # Python dependencies
 ├── README.md                      # This file
 ├── cache/                         # Cached data directory
 │   ├── matches/                   # Match results by season
@@ -246,6 +329,20 @@ prediction/
 ```
 
 ## 🎯 Key Features Explained
+
+### **Cross-Platform Launcher Scripts**
+- **`run_epl_prediction.sh`**: Bash script for Linux/Mac/WSL
+  - Auto-detects OS and Python version
+  - Creates virtual environment automatically
+  - Handles dependencies installation
+  - Provides interactive menu system
+  - Supports command-line arguments pass-through
+  
+- **`run_epl_prediction.bat`**: Native Windows batch script
+  - Works with Command Prompt and PowerShell
+  - Full Windows environment variable support
+  - Automatic dependency management
+  - Same functionality as bash version
 
 ### **Multi-Source Prediction Engine**
 - **Machine Learning Base**: Random Forest model trained on historical EPL data
@@ -272,6 +369,31 @@ prediction/
 - **Live Updates**: 30-minute cache for rapidly changing odds
 
 ## 🚨 Troubleshooting
+
+### **Cross-Platform Launcher Issues**
+
+1. **"Permission denied" (Linux/Mac)**
+   ```bash
+   # Make script executable
+   chmod +x run_epl_prediction.sh
+   ./run_epl_prediction.sh
+   ```
+
+2. **"Python not found" (Windows)**
+   ```cmd
+   # Install Python from https://www.python.org/downloads/
+   # Make sure to check "Add to PATH" during installation
+   ```
+
+3. **"Virtual environment failed"**
+   ```bash
+   # Manual creation
+   python -m venv .venv
+   # Linux/Mac:
+   source .venv/bin/activate
+   # Windows:
+   .venv\Scripts\activate
+   ```
 
 ### **Common Issues**
 
@@ -300,6 +422,17 @@ prediction/
    # Train the model
    python epl_prediction.py train
    ```
+
+### **Platform-Specific Notes**
+
+**Windows:**
+- Use `set` instead of `export` for environment variables
+- Use `run_epl_prediction.bat` for native Windows experience
+- Git Bash/WSL can also run the .sh script
+
+**Mac/Linux:**
+- Use `./run_epl_prediction.sh` for the launcher
+- Standard bash shell commands work out of the box
 
 ### **Rate Limit Management**
 - **Daily Limits**: 100 requests/day for API-Football
@@ -340,12 +473,47 @@ The system includes mappings for all 20 EPL teams with automatic transfer detect
 
 ## 🤝 Contributing
 
-This is a comprehensive EPL prediction system. To contribute:
+This is a comprehensive EPL prediction system with cross-platform support. To contribute:
 
+### **Development Setup**
+```bash
+# Fork and clone the repository
+git clone <your-fork-url>
+cd prediction
+
+# Use the launcher for easy setup
+./run_epl_prediction.sh  # Linux/Mac
+# or
+run_epl_prediction.bat   # Windows
+
+# Or manual setup
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+pip install -r requirements.txt  # If available
+```
+
+### **Contribution Areas**
 1. **Data Enhancement**: Add new data sources or features
-2. **Model Improvement**: Experiment with different ML algorithms
+2. **Model Improvement**: Experiment with different ML algorithms  
 3. **API Integration**: Add more bookmaker or stats APIs
-4. **UI/UX**: Enhance the interactive interface
+4. **UI/UX**: Enhance the interactive interface or launcher scripts
+5. **Cross-Platform**: Improve Windows/Mac/Linux compatibility
+6. **Documentation**: Enhance README, add code documentation
+7. **Testing**: Add unit tests and integration tests
+
+### **Code Guidelines**
+- Follow PEP 8 for Python code formatting
+- Add docstrings to functions and classes  
+- Test changes on multiple platforms when possible
+- Update README if adding new features
+- Maintain backwards compatibility with existing commands
+
+### **Pull Request Process**
+1. Create a feature branch from main
+2. Make your changes with clear commit messages
+3. Test on your platform (mention in PR if limited testing)
+4. Update documentation if needed
+5. Submit PR with description of changes
 
 ## 📄 License
 
