@@ -1,0 +1,116 @@
+# ⚽ EPL Prediction - Git Ignore File
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / Packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit Test / Coverage Reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project Specific
+# Keep cache structure but ignore contents
+cache/matches/*
+cache/player_stats/*
+cache/team_stats/*
+cache/team_schedules/*
+cache/squads/*
+cache/injuries/*
+cache/odds/*
+
+# Keep cache directories themselves
+!cache/matches/.gitkeep
+!cache/player_stats/.gitkeep
+!cache/team_stats/.gitkeep
+!cache/team_schedules/.gitkeep
+!cache/squads/.gitkeep
+!cache/injuries/.gitkeep
+!cache/odds/.gitkeep
+
+# Trained Models (optional - you may want to include these)
+# models/*.joblib
+
+# API Keys (if stored in files)
+api_keys.txt
+keys.json
+*.key
+
+# Logs
+*.log
+logs/
+
+# Temporary Files
+*.tmp
+*.temp
+temp/
