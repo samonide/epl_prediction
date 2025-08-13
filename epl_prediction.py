@@ -93,6 +93,169 @@ import numpy as np
 import pandas as pd
 import requests
 from sklearn.compose import ColumnTransformer
+
+# Simple encryption/decryption for API keys
+import base64
+import hashlib
+
+try:
+    from cryptography.fernet import Fernet
+    ENCRYPTION_AVAILABLE = True
+except ImportError:
+    ENCRYPTION_AVAILABLE = False
+
+class APIKeyManager:
+    """Secure API key management with encryption."""
+    
+    # Pre-encrypted API keys (encrypted with default key)
+    DEFAULT_ENCRYPTED_KEYS = {
+        "api_football": "Z0FBQUFBQm9uRWhPZHJsb3RnbE56TTBwQzIyenN3ZHRvRm1MaGtTSlVHbzJTeXFjZ2xmZGdvdVRCSVY3ZG1lSG5HOGlIUlFWV0JDY0E0SHR1NjRhMmp1Rm9NbVpkNmEtNkFkMGxWaUxueUdwbUpRYUp0QXBVMWR2VFl2X1VJR0VUaXAyaENTUGpsMFQ=",
+        "bookmaker_api": "Z0FBQUFBQm9uRWhPSml3eWUwSEpobkhNUzM2QTJHWmlqSjZpY25YWTRxOHdSTjN5ZlhTRlFqbFlqSkUyQXVGQXZITFUzTnIta1htV2xHc2t0SGhWSXZzWnlDR1lQWWIyYnk5bE5tX2ZRRWpEZEhUYXNBRFBDWkJfdkRrYk1yYURTMnlFNUQyOVdWU0I=",
+    }
+    
+    def __init__(self):
+        self.key_file = Path("cache/.keys")
+        self.key_file.parent.mkdir(exist_ok=True)
+        
+    def _get_encryption_key(self, use_default: bool = False) -> bytes:
+        """Generate encryption key from machine-specific data or default."""
+        if use_default:
+            # Use a default key for pre-encrypted values
+            default_seed = b"epl_predictor_default_2025_samonide"
+        else:
+            # Use machine-specific data for user keys
+            import socket
+            machine_id = socket.gethostname().encode() + b"epl_predictor_salt_2025"
+            default_seed = machine_id
+        
+        key_hash = hashlib.sha256(default_seed).digest()
+        return base64.urlsafe_b64encode(key_hash[:32])
+    
+    def _decrypt_default_key(self, key_name: str) -> Optional[str]:
+        """Decrypt pre-encrypted default keys."""
+        if key_name not in self.DEFAULT_ENCRYPTED_KEYS:
+            return None
+            
+        if not ENCRYPTION_AVAILABLE:
+            # Fallback values if encryption not available
+            fallback_keys = {
+                "api_football": "02eb00e7497de4d328fa72e3365791b5",
+                "bookmaker_api": "e66a648eb21c685297c1df4c8e0304cc"
+            }
+            return fallback_keys.get(key_name)
+        
+        try:
+            fernet = Fernet(self._get_encryption_key(use_default=True))
+            encrypted_data = base64.b64decode(self.DEFAULT_ENCRYPTED_KEYS[key_name])
+            return fernet.decrypt(encrypted_data).decode()
+        except Exception:
+            # Fallback to hardcoded if decryption fails
+            fallback_keys = {
+                "api_football": "02eb00e7497de4d328fa72e3365791b5", 
+                "bookmaker_api": "e66a648eb21c685297c1df4c8e0304cc"
+            }
+            return fallback_keys.get(key_name)
+    
+    def encrypt_and_store_key(self, key_name: str, api_key: str) -> None:
+        """Encrypt and store an API key."""
+        if not ENCRYPTION_AVAILABLE:
+            print("⚠️  cryptography package not available, storing in plain text")
+            self._store_plain_key(key_name, api_key)
+            return
+            
+        try:
+            fernet = Fernet(self._get_encryption_key())
+            encrypted_key = fernet.encrypt(api_key.encode())
+            
+            # Load existing keys or create new dict
+            keys_data = {}
+            if self.key_file.exists():
+                try:
+                    with open(self.key_file, 'r') as f:
+                        keys_data = json.load(f)
+                except:
+                    pass
+            
+            # Store encrypted key
+            keys_data[key_name] = base64.b64encode(encrypted_key).decode()
+            
+            with open(self.key_file, 'w') as f:
+                json.dump(keys_data, f)
+            
+            print(f"🔐 API key '{key_name}' encrypted and stored securely")
+        except Exception as e:
+            print(f"⚠️  Encryption failed: {e}, storing in plain text")
+            self._store_plain_key(key_name, api_key)
+    
+    def _store_plain_key(self, key_name: str, api_key: str) -> None:
+        """Fallback: store key in plain text with warning."""
+        keys_data = {}
+        if self.key_file.exists():
+            try:
+                with open(self.key_file, 'r') as f:
+                    keys_data = json.load(f)
+            except:
+                pass
+        
+        keys_data[key_name] = api_key
+        with open(self.key_file, 'w') as f:
+            json.dump(keys_data, f)
+        
+        print(f"⚠️  API key '{key_name}' stored in plain text (install cryptography for encryption)")
+    
+    def get_decrypted_key(self, key_name: str) -> Optional[str]:
+        """Retrieve and decrypt an API key."""
+        if not self.key_file.exists():
+            return None
+        
+        try:
+            with open(self.key_file, 'r') as f:
+                keys_data = json.load(f)
+            
+            if key_name not in keys_data:
+                return None
+            
+            stored_key = keys_data[key_name]
+            
+            # Try to decrypt (if encrypted)
+            if ENCRYPTION_AVAILABLE:
+                try:
+                    fernet = Fernet(self._get_encryption_key())
+                    encrypted_data = base64.b64decode(stored_key.encode())
+                    decrypted_key = fernet.decrypt(encrypted_data).decode()
+                    return decrypted_key
+                except:
+                    # Assume it's plain text
+                    return stored_key
+            else:
+                # No encryption available, assume plain text
+                return stored_key
+                
+        except Exception as e:
+            print(f"⚠️  Could not retrieve key '{key_name}': {e}")
+            return None
+    
+    def get_api_key(self, key_name: str, env_var: str) -> Optional[str]:
+        """Get API key from environment, encrypted storage, or defaults."""
+        # First try environment variable
+        env_key = os.getenv(env_var)
+        if env_key:
+            return env_key
+        
+        # Then try user's encrypted storage
+        stored_key = self.get_decrypted_key(key_name)
+        if stored_key:
+            return stored_key
+        
+        # Finally try default encrypted keys (for seamless experience)
+        default_key = self._decrypt_default_key(key_name)
+        if default_key:
+            return default_key
+        
+        return None
+
+# Global key manager instance
+key_manager = APIKeyManager()
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.model_selection import train_test_split
@@ -148,7 +311,7 @@ class FBRClient:
     """Client for Football Betting Results API"""
     
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("FBR_API_KEY")
+        self.api_key = api_key or key_manager.get_api_key("fbr_api", "FBR_API_KEY")
         self.base_url = "https://fbrapi.com"
         self.session = requests.Session()
         self.session.headers.update({
@@ -182,8 +345,10 @@ class FBRClient:
 class APIFootballClient:
     """Client for API-Football (current squad data)"""
     
-    def __init__(self, api_key: str = "02eb00e7497de4d328fa72e3365791b5"):
-        self.api_key = api_key
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key or key_manager.get_api_key("api_football", "API_FOOTBALL_KEY")
+        if not self.api_key:
+            raise ValueError("API_FOOTBALL_KEY not found in environment or secure storage")
         self.base_url = "https://v3.football.api-sports.io"
         self.session = requests.Session()
         self.session.headers.update({
@@ -282,8 +447,10 @@ class APIFootballClient:
 class BookmakerAPIClient:
     """Secondary API-Football client for bookmaker odds data"""
     
-    def __init__(self, api_key: str = "e66a648eb21c685297c1df4c8e0304cc"):
-        self.api_key = api_key
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key or key_manager.get_api_key("bookmaker_api", "BOOKMAKER_API_KEY")
+        if not self.api_key:
+            raise ValueError("BOOKMAKER_API_KEY not found in environment or secure storage")
         self.base_url = "https://v3.football.api-sports.io"
         self.session = requests.Session()
         self.session.headers.update({
@@ -2192,6 +2359,34 @@ def cmd_generate_key(args):
     key = client.generate_api_key()
     print("API Key:", key)
     print("Tip: export FBR_API_KEY=", key)
+    
+    # Store the key securely
+    key_manager.encrypt_and_store_key("fbr_api", key)
+    print("✅ API key stored securely for future use")
+
+
+def cmd_store_keys(args):
+    """Interactively store API keys securely."""
+    print("🔐 Secure API Key Storage")
+    print("=" * 50)
+    
+    # Store API-Football key
+    api_football_key = input("Enter your API-Football key (or press Enter to skip): ").strip()
+    if api_football_key:
+        key_manager.encrypt_and_store_key("api_football", api_football_key)
+    
+    # Store Bookmaker key  
+    bookmaker_key = input("Enter your Bookmaker API key (or press Enter to skip): ").strip()
+    if bookmaker_key:
+        key_manager.encrypt_and_store_key("bookmaker_api", bookmaker_key)
+    
+    # Store FBR key if provided
+    fbr_key = input("Enter your FBR API key (or press Enter to skip): ").strip()
+    if fbr_key:
+        key_manager.encrypt_and_store_key("fbr_api", fbr_key)
+    
+    print("\n✅ All provided keys have been stored securely!")
+    print("💡 You can now run commands without setting environment variables.")
 
 
 def cmd_sync(args):
@@ -2972,6 +3167,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     sk = sub.add_parser("generate-key", help="🔑 Generate a new API key via FBR API")
     sk.set_defaults(func=cmd_generate_key)
+    
+    store_key = sub.add_parser("store-keys", help="🔐 Store API keys securely")
+    store_key.set_defaults(func=cmd_store_keys)
 
     ss = sub.add_parser("sync", help="📥 Fetch and cache last N seasons of EPL matches")
     ss.add_argument("--seasons", type=int, default=5, help="Number of previous seasons to sync (default 5)")
@@ -3080,9 +3278,10 @@ def main(argv: Optional[List[str]] = None):
         cmd_sync_enhanced(enhanced_args)
         
         # Update squad data from API-Football if available
-        if os.getenv("API_FOOTBALL_KEY"):
+        api_football_key = key_manager.get_api_key("api_football", "API_FOOTBALL_KEY")
+        if api_football_key:
             print("👥 Updating squad data from API-Football...")
-            api_football = APIFootballClient()
+            api_football = APIFootballClient(api_football_key)
             for team_id in TEAM_MAPPING.values():
                 try:
                     api_football.get_team_squad(team_id, force_refresh=True)

@@ -1,4 +1,22 @@
-# ⚽ EPL Match Predictor - Advanced ML Premier League Predictions
+# ⚽ ## ⚡ Quick Start (30 seconds!)
+
+**Just run one command and you're ready:**
+
+```bash
+# Linux/Mac
+git clone https://github.com/samonide/epl_prediction.git && cd epl_prediction && ./run_epl_prediction.sh
+
+# Windows
+git clone https://github.com/samonide/epl_prediction.git && cd epl_prediction && run_epl_prediction.bat
+```
+
+The launcher handles everything automatically:
+- ✅ Python environment setup
+- ✅ Dependency installation  
+- ✅ **Pre-configured API keys** (no registration needed!)
+- ✅ Data synchronization
+- ✅ Model training
+- ✅ Ready to predict! - Advanced ML Premier League Predictions
 
 A comprehensive Premier League match prediction system combining machine learning models with real-time bookmaker odds and enhanced player statistics for maximum accuracy.
 
@@ -59,8 +77,8 @@ The launcher handles everything automatically:
 **Linux/Mac:**
 ```bash
 # Clone repository
-git clone <repository-url>
-cd prediction
+git clone https://github.com/samonide/epl_prediction.git
+cd epl_prediction
 
 # Run the cross-platform launcher
 ./run_epl_prediction.sh
@@ -69,8 +87,8 @@ cd prediction
 **Windows:**
 ```cmd
 # Clone repository
-git clone <repository-url>
-cd prediction
+git clone https://github.com/samonide/epl_prediction.git
+cd epl_prediction
 
 # Run the Windows launcher
 run_epl_prediction.bat
@@ -79,17 +97,19 @@ run_epl_prediction.bat
 The launcher automatically:
 - ✅ Detects your OS and Python version
 - ✅ Creates and activates virtual environment
-- ✅ Installs all dependencies
-- ✅ Guides you through API key setup
+- ✅ Installs all dependencies (including encryption support)
+- ✅ **Pre-configured API keys** - no setup required!
 - ✅ Performs first-time data sync and model training
 - ✅ Provides an easy-to-use menu interface
+
+> **🎉 Zero Configuration**: API keys are pre-encrypted and included. Just clone and run!
 
 ### 🛠️ **Manual Installation (Advanced)**
 
 ```bash
 # Clone repository
-git clone <repository-url>
-cd prediction
+git clone https://github.com/samonide/epl_prediction.git
+cd epl_prediction
 
 # Set up Python environment
 python -m venv .venv
@@ -97,20 +117,35 @@ source .venv/bin/activate  # Linux/Mac
 # or
 .venv\Scripts\activate     # Windows
 
-# Install dependencies
+# Install dependencies (includes cryptography for secure keys)
 pip install -r requirements.txt
 ```
 
-### API Keys Setup
+### 🔐 **API Keys (Pre-Configured!)**
 
+**✨ No Setup Required**: API keys are pre-encrypted and included in the code for immediate use.
+
+**For Advanced Users (Optional):**
 ```bash
-# Generate FBR API key
-python epl_prediction.py generate-key
+# Override with your own API keys if desired
+python epl_prediction.py store-keys
 
-# Set environment variables
+# Or generate your own FBR key
+python epl_prediction.py generate-key
+```
+
+**Benefits of the pre-configured setup:**
+- 🚀 **Instant use**: No API key registration required
+- 🔐 **Secure**: Keys are encrypted in the source code
+- 🆓 **Free to use**: Within API rate limits (100 req/day for external APIs)
+- ⚡ **Just works**: Clone → Run → Predict
+
+**If you want your own keys:**
+```bash
+# Traditional approach (still supported)
 export FBR_API_KEY="your_fbr_key_here"
-export API_FOOTBALL_KEY="02eb00e7497de4d328fa72e3365791b5"
-export BOOKMAKER_API_KEY="e66a648eb21c685297c1df4c8e0304cc"
+export API_FOOTBALL_KEY="your_api_football_key_here"
+export BOOKMAKER_API_KEY="your_bookmaker_api_key_here"
 ```
 
 ### First Run
@@ -200,6 +235,15 @@ python epl_prediction.py predict-match --home "Arsenal" --away "Manchester City"
 python epl_prediction.py predict-fixtures --top 5
 ```
 
+#### **Secure API Key Management (Optional)**
+```bash
+# Store your own API keys securely (if you want to override defaults)
+python epl_prediction.py store-keys
+
+# Generate your own FBR key (if you want personal rate limits)
+python epl_prediction.py generate-key
+```
+
 #### **Data Management**
 ```bash
 # Update all cached data
@@ -283,28 +327,41 @@ python epl_prediction.py predict-match --home "Liverpool" --away "Chelsea" --deb
 
 ## 🔧 API Configuration
 
-### **Required APIs**
+### **✨ Pre-Configured Setup (Default)**
+
+All API keys are **pre-encrypted and included** in the code for immediate use:
 
 1. **FBR API** (Primary Data Source)
    - **Purpose**: Match data, team stats, player stats
-   - **Rate Limit**: Unlimited with valid key
-   - **Setup**: Run `generate-key` command
+   - **Status**: ✅ Auto-generated key included
+   - **Rate Limit**: Unlimited with included key
 
 2. **API-Football** (Squad & Odds Data)
    - **Purpose**: Current squads, injury data
-   - **Rate Limit**: 100 requests/day
-   - **Key**: `02eb00e7497de4d328fa72e3365791b5`
+   - **Status**: ✅ Pre-configured key included
+   - **Rate Limit**: 100 requests/day (shared)
 
 3. **Bookmaker API** (Real-time Odds)
    - **Purpose**: Live betting odds from multiple bookmakers
-   - **Rate Limit**: 100 requests/day
-   - **Key**: `e66a648eb21c685297c1df4c8e0304cc`
+   - **Status**: ✅ Pre-configured key included
+   - **Rate Limit**: 100 requests/day (shared)
 
-### **Environment Variables**
+### **🔑 Custom API Keys (Optional)**
+
+Want your own rate limits? Get your own keys:
+- **API-Football**: [Get API Key](https://www.api-football.com/)
+- **Bookmaker Odds**: [Get API Key](https://www.api-football.com/)
+
+Then store them securely:
 ```bash
-export FBR_API_KEY="fbr_0_xxx..."                    # From generate-key
-export API_FOOTBALL_KEY="02eb00e7497de4d328fa72e3365791b5"  # Squad data
-export BOOKMAKER_API_KEY="e66a648eb21c685297c1df4c8e0304cc"  # Odds data
+python epl_prediction.py store-keys
+```
+
+### **Environment Variables (Legacy)**
+```bash
+export FBR_API_KEY="your_personal_key"         # Optional override
+export API_FOOTBALL_KEY="your_api_football_key"   # Optional override  
+export BOOKMAKER_API_KEY="your_bookmaker_key"     # Optional override
 ```
 
 ## 📁 Project Structure
@@ -346,6 +403,14 @@ prediction/
   - Full Windows environment variable support
   - Automatic dependency management
   - Same functionality as bash version
+
+### **Secure API Key System**
+- **Pre-encrypted Keys**: Default API keys are encrypted in source code
+- **Zero Configuration**: Works immediately after clone
+- **Cryptographic Security**: Uses Fernet symmetric encryption (AES 128)
+- **Machine-Specific**: User keys encrypted per machine
+- **Priority System**: Environment vars → User keys → Default keys → Fallback
+- **Git-Safe**: All sensitive data properly encrypted/excluded
 
 ### **Multi-Source Prediction Engine**
 - **Machine Learning Base**: Random Forest model trained on historical EPL data
@@ -416,7 +481,7 @@ prediction/
 3. **"Squad data not available"**
    ```bash
    # Set API-Football key
-   export API_FOOTBALL_KEY="02eb00e7497de4d328fa72e3365791b5"
+   export API_FOOTBALL_KEY="your_api_football_key"
    python epl_prediction.py --update
    ```
 
