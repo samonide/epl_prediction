@@ -88,6 +88,7 @@ cache/team_schedules/*
 cache/squads/*
 cache/injuries/*
 cache/odds/*
+cache/transfers/*
 
 # Keep cache directories themselves
 !cache/matches/.gitkeep
@@ -97,6 +98,7 @@ cache/odds/*
 !cache/squads/.gitkeep
 !cache/injuries/.gitkeep
 !cache/odds/.gitkeep
+!cache/transfers/.gitkeep
 
 # Trained Models (optional - you may want to include these)
 # models/*.joblib

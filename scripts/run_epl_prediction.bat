@@ -71,8 +71,8 @@ if errorlevel 1 (
 )
 
 REM Check if main script exists
-if not exist "epl_prediction.py" (
-    echo ❌ epl_prediction.py not found! Make sure you're in the correct directory.
+if not exist "epl_prediction_advanced.py" (
+    echo ❌ epl_prediction_advanced.py not found! Make sure you're in the correct directory.
     pause
     exit /b 1
 )
@@ -108,7 +108,7 @@ if defined KEYS_MISSING (
     echo    set API_FOOTBALL_KEY=02eb00e7497de4d328fa72e3365791b5
     echo    set BOOKMAKER_API_KEY=e66a648eb21c685297c1df4c8e0304cc
     echo.
-    echo 🔧 Generate FBR key with: python epl_prediction.py generate-key
+    echo 🔧 Generate FBR key with: python epl_prediction_advanced.py generate-key
     echo.
 )
 
@@ -120,16 +120,16 @@ if not exist "models\epl_result_model.joblib" (
     echo 🚀 First-time setup required!
     echo.
     echo 1️⃣  Generating FBR API key...
-    python epl_prediction.py generate-key
+    python epl_prediction_advanced.py generate-key
     
     echo 2️⃣  Syncing match data (3 seasons)...
-    python epl_prediction.py sync --seasons 3
+    python epl_prediction_advanced.py sync --seasons 3
     
     echo 3️⃣  Syncing enhanced data...
-    python epl_prediction.py sync-enhanced --seasons 2
+    python epl_prediction_advanced.py sync-enhanced --seasons 2
     
     echo 4️⃣  Training ML model...
-    python epl_prediction.py train
+    python epl_prediction_advanced.py train
     
     echo ✅ Setup complete!
 )
@@ -137,7 +137,7 @@ if not exist "models\epl_result_model.joblib" (
 echo.
 echo 🚀 Launching EPL Prediction Interactive Mode...
 echo.
-python epl_prediction.py --interactive
+python epl_prediction_advanced.py --interactive
 
 echo.
 echo 👋 Thanks for using EPL Predictor! Good luck! ⚽

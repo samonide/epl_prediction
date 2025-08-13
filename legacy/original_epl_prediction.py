@@ -1560,8 +1560,18 @@ def build_feature_matrix(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
 def get_enhanced_top_scorers(client: FBRClient, home_team_id: str, away_team_id: str, season_id: str, 
                            h2h_data: Dict = None, home_form: Dict = None, away_form: Dict = None,
                            home_team_name: str = None, away_team_name: str = None) -> Dict[str, List[Dict]]:
-    """Get top scorers for both teams with enhanced analysis including current squad, transfers, and form."""
+    """Get top scorers for both teams with enhanced analysis including new signings, transfers, and form."""
     result = {"home": [], "away": []}
+    
+    # Initialize enhanced player analyzer
+    try:
+        from enhanced_player_analyzer import EnhancedPlayerAnalyzer
+        player_analyzer = EnhancedPlayerAnalyzer({})
+        use_enhanced_analyzer = True
+        print("✅ Enhanced Player Analyzer loaded - will include new signings like Wirtz")
+    except ImportError:
+        print("⚠️  Enhanced Player Analyzer not available - using basic analysis")
+        use_enhanced_analyzer = False
     
     # Initialize API-Football client for current squad data
     api_football = APIFootballClient()
@@ -1571,23 +1581,15 @@ def get_enhanced_top_scorers(client: FBRClient, home_team_id: str, away_team_id:
             # Get team name from the context
             if team_key == "home":
                 team_context_name = home_team_name or "Unknown Team"
+                opponent_team_name = away_team_name or "Unknown Team"
+                team_form = home_form
             else:
                 team_context_name = away_team_name or "Unknown Team"
+                opponent_team_name = home_team_name or "Unknown Team"
+                team_form = away_form
                 
-            # Get current squad from API-Football if team mapping exists
-            current_squad = []
-            api_team_id = TEAM_MAPPING.get(team_id)
-            if api_team_id:
-                try:
-                    squad_data = api_football.get_team_squad(api_team_id, 2024)
-                    if squad_data:
-                        # Extract player data from API-Football response
-                        squad_info = squad_data[0] if squad_data else {}
-                        current_squad = squad_info.get("players", [])
-                except Exception as e:
-                    print(f"Could not fetch current squad from API-Football for team {team_id}: {e}")
-            
             # Get player season stats (try fresh fetch first, then cache)
+            historical_players = []
             season_stats = []
             try:
                 season_stats = load_or_fetch_player_stats(client, team_id, season_id, cache_only=False)
@@ -1600,6 +1602,69 @@ def get_enhanced_top_scorers(client: FBRClient, home_team_id: str, away_team_id:
             
             if not season_stats:
                 continue
+            
+            # Convert season stats to standard format for analyzer
+            for player in season_stats:
+                meta = player.get("meta_data", {})
+                stats = player.get("stats", {}).get("stats", {})
+                
+                player_name = meta.get("player_name", "Unknown")
+                position = stats.get("positions", "")
+                goals = stats.get("gls", 0) or 0
+                matches = stats.get("matches_played", 0) or 0
+                xg = stats.get("xg", 0) or 0
+                assists = stats.get("ast", 0) or 0
+                
+                if matches > 0:  # Only include players who played
+                    historical_players.append({
+                        'name': player_name,
+                        'position': position,
+                        'goals': goals,
+                        'matches': matches,
+                        'goals_per_game': goals / matches,
+                        'xg': xg,
+                        'assists': assists,
+                        'scoring_probability': min((goals / matches) * 0.4 + (xg / matches) * 0.3, 0.5)
+                    })
+            
+            # Use enhanced analyzer if available
+            if use_enhanced_analyzer:
+                try:
+                    enhanced_predictions = player_analyzer.get_enhanced_player_predictions(
+                        team_context_name, historical_players, h2h_data, team_form
+                    )
+                    
+                    # Apply opponent-specific adjustments
+                    for player in enhanced_predictions:
+                        opponent_adjustment = player_analyzer.get_opponent_specific_adjustments(
+                            player['name'], team_context_name, opponent_team_name, 
+                            h2h_data.get('recent_meetings', []) if h2h_data else None
+                        )
+                        player['scoring_probability'] *= opponent_adjustment
+                        player['opponent_adjustment'] = round(opponent_adjustment, 2)
+                    
+                    # Sort by updated probabilities
+                    enhanced_predictions.sort(key=lambda x: x.get('scoring_probability', 0), reverse=True)
+                    result[team_key] = enhanced_predictions[:3]
+                    continue
+                    
+                except Exception as e:
+                    print(f"Enhanced analyzer failed for {team_context_name}: {e}")
+                    # Fall back to legacy method below
+            
+            # Legacy method (fallback or if enhanced analyzer not available)
+            # Get current squad from API-Football if team mapping exists
+            current_squad = []
+            api_team_id = TEAM_MAPPING.get(team_id)
+            if api_team_id:
+                try:
+                    squad_data = api_football.get_team_squad(api_team_id, 2024)
+                    if squad_data:
+                        # Extract player data from API-Football response
+                        squad_info = squad_data[0] if squad_data else {}
+                        current_squad = squad_info.get("players", [])
+                except Exception as e:
+                    print(f"Could not fetch current squad from API-Football for team {team_id}: {e}")
             
             # Create mapping of current squad players (if available)
             current_players = {}

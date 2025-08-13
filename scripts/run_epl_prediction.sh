@@ -151,14 +151,14 @@ check_api_keys() {
         echo "   export API_FOOTBALL_KEY=\"02eb00e7497de4d328fa72e3365791b5\""
         echo "   export BOOKMAKER_API_KEY=\"e66a648eb21c685297c1df4c8e0304cc\""
         echo
-        print_color $CYAN "🔧 Generate FBR key with: $PYTHON_CMD epl_prediction.py generate-key"
+        print_color $CYAN "🔧 Generate FBR key with: $PYTHON_CMD epl_prediction_advanced.py generate-key"
     fi
 }
 
 # Function to check if first time setup is needed
 check_setup() {
-    if [ ! -f "epl_prediction.py" ]; then
-        print_color $RED "❌ epl_prediction.py not found! Make sure you're in the correct directory."
+    if [ ! -f "epl_prediction_advanced.py" ]; then
+        print_color $RED "❌ epl_prediction_advanced.py not found! Make sure you're in the correct directory."
         exit 1
     fi
     
@@ -175,16 +175,16 @@ first_time_setup() {
     print_header "FIRST-TIME SETUP"
     
     print_color $BLUE "1️⃣  Generating FBR API key..."
-    $PYTHON_CMD epl_prediction.py generate-key
+    $PYTHON_CMD epl_prediction_advanced.py generate-key
     
     print_color $BLUE "2️⃣  Syncing match data (3 seasons)..."
-    $PYTHON_CMD epl_prediction.py sync --seasons 3
+    $PYTHON_CMD epl_prediction_advanced.py sync --seasons 3
     
     print_color $BLUE "3️⃣  Syncing enhanced data (players & team stats)..."
-    $PYTHON_CMD epl_prediction.py sync-enhanced --seasons 2
+    $PYTHON_CMD epl_prediction_advanced.py sync-enhanced --seasons 2
     
     print_color $BLUE "4️⃣  Training ML model..."
-    $PYTHON_CMD epl_prediction.py train
+    $PYTHON_CMD epl_prediction_advanced.py train
     
     print_color $GREEN "✅ Setup complete! You're ready to make predictions!"
 }
@@ -210,14 +210,14 @@ show_quick_menu() {
     case $choice in
         1)
             print_header "NEXT MATCH PREDICTION"
-            $PYTHON_CMD epl_prediction.py --next
+            $PYTHON_CMD epl_prediction_advanced.py --next
             ;;
         2)
             print_header "UPCOMING FIXTURES"
             print_color $CYAN "How many fixtures to predict? (default: 5): "
             read -r num_fixtures
             num_fixtures=${num_fixtures:-5}
-            $PYTHON_CMD epl_prediction.py predict-fixtures --top $num_fixtures
+            $PYTHON_CMD epl_prediction_advanced.py predict-fixtures --top $num_fixtures
             ;;
         3)
             print_header "SPECIFIC MATCH PREDICTION"
@@ -225,22 +225,22 @@ show_quick_menu() {
             read -r home_team
             print_color $CYAN "Away team: "
             read -r away_team
-            $PYTHON_CMD epl_prediction.py predict-match --home "$home_team" --away "$away_team"
+            $PYTHON_CMD epl_prediction_advanced.py predict-match --home "$home_team" --away "$away_team"
             ;;
         4)
             print_header "UPDATING ALL DATA"
-            $PYTHON_CMD epl_prediction.py --update
+            $PYTHON_CMD epl_prediction_advanced.py --update
             ;;
         5)
             print_header "INTERACTIVE MODE"
-            $PYTHON_CMD epl_prediction.py --interactive
+            $PYTHON_CMD epl_prediction_advanced.py --interactive
             ;;
         6)
             setup_menu
             ;;
         7)
             print_header "HELP"
-            $PYTHON_CMD epl_prediction.py --help
+            $PYTHON_CMD epl_prediction_advanced.py --help
             ;;
         8)
             print_color $GREEN "👋 Goodbye!"
@@ -272,22 +272,22 @@ setup_menu() {
     
     case $choice in
         1)
-            $PYTHON_CMD epl_prediction.py generate-key
+            $PYTHON_CMD epl_prediction_advanced.py generate-key
             ;;
         2)
             print_color $CYAN "Number of seasons to sync (default: 3): "
             read -r seasons
             seasons=${seasons:-3}
-            $PYTHON_CMD epl_prediction.py sync --seasons $seasons
+            $PYTHON_CMD epl_prediction_advanced.py sync --seasons $seasons
             ;;
         3)
             print_color $CYAN "Number of seasons for enhanced data (default: 2): "
             read -r seasons
             seasons=${seasons:-2}
-            $PYTHON_CMD epl_prediction.py sync-enhanced --seasons $seasons
+            $PYTHON_CMD epl_prediction_advanced.py sync-enhanced --seasons $seasons
             ;;
         4)
-            $PYTHON_CMD epl_prediction.py train
+            $PYTHON_CMD epl_prediction_advanced.py train
             ;;
         5)
             print_color $YELLOW "🧹 Cleaning cache..."
@@ -322,10 +322,10 @@ check_system_status() {
     fi
     
     # Check main file
-    if [ -f "epl_prediction.py" ]; then
+    if [ -f "epl_prediction_advanced.py" ]; then
         print_color $GREEN "✅ Main script found"
     else
-        print_color $RED "❌ epl_prediction.py not found"
+        print_color $RED "❌ epl_prediction_advanced.py not found"
     fi
     
     # Check model
@@ -378,7 +378,7 @@ main() {
     # Launch the beautiful interactive mode directly
     print_color $GREEN "� Launching EPL Prediction Interactive Mode..."
     echo
-    $PYTHON_CMD epl_prediction.py --interactive
+    $PYTHON_CMD epl_prediction_advanced.py --interactive
 }
 
 # Handle script arguments
@@ -390,5 +390,5 @@ else
     cd "$(dirname "$0")"
     check_python
     activate_venv
-    $PYTHON_CMD epl_prediction.py "$@"
+    $PYTHON_CMD epl_prediction_advanced.py "$@"
 fi
