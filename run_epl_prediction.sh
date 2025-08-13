@@ -375,22 +375,10 @@ main() {
         first_time_setup
     fi
     
-    # Show quick menu
-    show_quick_menu
-    
-    # After action, ask if user wants to continue
+    # Launch the beautiful interactive mode directly
+    print_color $GREEN "� Launching EPL Prediction Interactive Mode..."
     echo
-    print_color $CYAN "🔄 Run another action? (y/N): "
-    read -r continue_choice
-    
-    case $continue_choice in
-        [yY]|[yY][eE][sS])
-            main
-            ;;
-        *)
-            print_color $GREEN "👋 Thanks for using EPL Predictor! Good luck! ⚽"
-            ;;
-    esac
+    $PYTHON_CMD epl_prediction.py --interactive
 }
 
 # Handle script arguments

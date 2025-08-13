@@ -33,16 +33,60 @@ Notes:
 
 from __future__ import annotations
 
+import sys
+import os
+from pathlib import Path
+
+# Auto-activate virtual environment if it exists and we're not already in one
+def auto_activate_venv():
+    """Automatically activate virtual environment if available and not already active."""
+    # Check if we're already in a virtual environment
+    if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+        return  # Already in a virtual environment
+    
+    # Look for virtual environment
+    script_dir = Path(__file__).parent
+    venv_paths = [
+        script_dir / '.venv',
+        script_dir / 'venv', 
+        script_dir / 'env'
+    ]
+    
+    for venv_path in venv_paths:
+        if venv_path.exists():
+            # Determine the correct activation script path
+            if sys.platform == "win32":
+                python_exe = venv_path / "Scripts" / "python.exe"
+            else:
+                python_exe = venv_path / "bin" / "python"
+            
+            if python_exe.exists():
+                # Re-execute script with virtual environment Python
+                import subprocess
+                cmd = [str(python_exe)] + sys.argv
+                try:
+                    result = subprocess.run(cmd, check=False)
+                    sys.exit(result.returncode)
+                except KeyboardInterrupt:
+                    sys.exit(1)
+                except Exception as e:
+                    print(f"⚠️  Warning: Could not activate virtual environment: {e}")
+                    break
+
+# Call auto-activation before importing dependencies
+try:
+    auto_activate_venv()
+except Exception:
+    pass  # Continue if auto-activation fails
+
+# Now import other modules
 import argparse
 import gzip
 import json
 import logging
-import os
-import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime, UTC
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -477,7 +521,7 @@ def combine_ml_and_odds_predictions(ml_probs: Dict, odds_data: Dict, ml_weight: 
         "odds_available": True
     }
 
-
+@dataclass  
 class FBRClient:
     api_key: Optional[str] = None
     base_url: str = "https://fbrapi.com"
